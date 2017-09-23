@@ -1,109 +1,230 @@
 ## Johnathon Shook- UNIX
 
-## Data Inspection
---> $ for filename in fang_et_al_genotypes.txt snp_position.txt ; do echo "Number of lines: $(wc -l $filename)"; echo  "Number of columns: $(awk -F "\t" '{print NF; exit}' $filename) $filename"; echo "File size: $(du -h $filename)"; done
+## Data inspection
 
-**Output:**
+$ du -h fang_et_al_genotypes.txt snp_position.txt
 
-Number of lines: 2783 fang_et_al_genotypes.txt
+$ wc -l fang_et_al_genotypes.txt snp_position.txt
 
-Number of columns: 986 fang_et_al_genotypes.txt
+$ awk -F "\t" '{print NF; exit}' fang_et_al_genotypes.txt
 
-File size: 11M       fang_et_al_genotypes.txt
+$ awk -F "\t" '{print NF; exit}' snp_position.txt
 
-Number of lines: 984 snp_position.txt
+## Data processing
 
-Number of columns: 15 snp_position.txt
+$ grep -E "(ZMMIL|ZMMLR|ZMMMR)" fang_et_al_genotypes.txt > maize_genotypes.txt
 
-File size: 84K       snp_position.txt
+$ grep -E "(ZMPBA|ZMPIL|ZMPJA)" fang_et_al_genotypes.txt > teosinte_genotypes.txt
 
-## Data Processing
-## Split into separate maize and teosinte files
+$ grep "Group" fang_et_al_genotypes.txt > header.txt
 
---> $ grep -E "(ZMMIL|ZMMLR|ZMMMR)" fang_et_al_genotypes.txt > maize_genotypes.txt
+$ cat header.txt maize_genotypes.txt > maize.txt 
 
+$ cat header.txt teosinte_genotypes.txt > teosinte.txt
 
---> $ grep -E "(ZMPBA|ZMPIL|ZMPJA)" fang_et_al_genotypes.txt > teosinte_genotypes.txt
+$ cut -f 3-968 maize.txt > cut_maize.txt 
 
-## Create file w/ headers from the genotype file and add it back to the extracted files
+$ cut -f 3-968 teosinte.txt > cut_teosinte.txt
 
---> $ grep "Group" fang_et_al_genotypes.txt > header.txt
+$ awk -f transpose.awk cut_maize.txt > transposed_maize.txt
 
---> $ cat header.txt maize_genotypes.txt > maize_header.txt 
+$ awk -f transpose.awk cut_teosinte.txt > transposed_teosinte.txt
 
---> $ cat header.txt teosinte_genotypes.txt > teosinte_header.txt
+$ grep -v "^#" snp_position.txt | cut -f 1,3,4 > cut_snp_position.txt
 
-## Remove first 2 columns so column *(SNP ID)* can be used to join the files
+$ grep -v "Group" transposed_maize.txt > maize_noheader.txt 
 
---> $ cut -f 3-968 maize_header.txt > maize_cut.txt 
+$ grep -v "Group" transposed_teosinte.txt > teosinte_noheader.txt 
 
---> $ cut -f 3-968 teosinte_header.txt > teosinte_cut.txt
+$ grep -v "SNP_ID" cut_snp_position.txt > snp_noheader.txt
 
-## Transpose the data to allow genotypes and snp files to merge
+$ sort -k1,1 snp_noheader.txt > sorted_snp.txt 
 
---> $ awk -f transpose.awk maize_cut.txt > transposed_maize.txt
+$ sort -k1,1 maize_noheader.txt > sorted_maize.txt 
 
---> $ awk -f transpose.awk teosinte_cut.txt > transposed_teosinte.txt
+$ sort -k1,1 teosinte_noheader.txt > sorted_teosinte.txt
 
-## Keep only columns 1, 3 and 4 from snp.position.txt file
+$ sort -k1,1 -c sorted_snp.txt | echo $? 
 
---> $ grep -v "^#" snp_position.txt | cut -f 1,3,4 > snp_position_cut.txt
+$ sort -k1,1 -c sorted_maize.txt | echo $?
 
-## Remove headers from the files
+$ sort -k1,1 -c sorted_teosinte.txt | echo $?
 
---> $ grep -v "Group" transposed_maize.txt > maize_no_header.txt
+$ join -t $'\t' -1 1 -2 1 sorted_snp.txt sorted_maize.txt > maize_data.txt
 
---> $ grep -v "Group" transposed_teosinte.txt > teosinte_no_header.txt 
+$ join -t $'\t' -1 1 -2 1 sorted_snp.txt sorted_teosinte.txt > teosinte_data.txt
 
---> $ grep -v "SNP_ID" snp_position.txt_cut > snp_no_header.txt
+$ sort -k2,2n maize_data.txt > maize_sorted_by_chr.txt 
 
-## Sort both Genotype and SNP files to appropriately join them 
+$ sort -k2,2n teosinte_data.txt > teosinte_sorted_by_chr.txt
 
---> $ sort -k1,1 snp_no_header.txt > snp_sorted.txt 
+$ sed 's/<TAB>/?/g' maize_sorted_by_chr.txt > maize_substituted.txt
 
---> $ sort -k1,1 maize_no_header.txt > maize_sorted.txt
+$ sed 's/<TAB>/?/g' teosinte_sorted_by_chr.txt > teosinte_substituted.txt
 
--> $ sort -k1,1 teosinte_no_header.txt > teosinte_sorted.txt
+$ sed 's/?/-/g' maize_substituted.txt > maize_substituted_dash.txt
 
-## Join SNP and Genotype files
+$ sed 's/?/-/g' teosinte_substituted.txt > teosinte_substituted_dash.txt
 
---> $ join -t $'\t' -1 1 -2 1 snp_sorted.txt maize_sorted.txt > maize_joined.txt
+$ awk '$2 == /1/' maize_substituted.txt > maize_chr1.txt
 
---> $ join -t $'\t' -1 1 -2 1 snp_sorted.txt teosinte_sorted.txt > teosinte_joined.txt
+$ awk '$2 ~ /2/' maize_substituted.txt > maize_chr2.txt 
 
-## Sort files by chromosome number
+$ awk '$2 ~ /3/' maize_substituted.txt > maize_chr3.txt 
 
-$ sort -k2,2n maize_joined.txt > maize_sorted_by_chr.txt 
+$ awk '$2 == /4/' maize_substituted.txt > maize_chr4.txt
 
-$ sort -k2,2n teosinte_joined.txt > teosinte_sorted_by_chr.txt
+$ awk '$2 ~ /5/' maize_substituted.txt > maize_chr5.txt 
 
-## Code missing data as a dash instead of question mark
+$ awk '$2 ~ /6/' maize_substituted.txt > maize_chr6.txt 
 
---> $ sed 's/?/-/g' maize_sorted_by_chr.txt > maize_dash.txt
+$ awk '$2 == /7/' maize_substituted.txt > maize_chr7.txt
 
---> $ sed 's/?/-/g' teosinte_sorted_by_chr.txt > teosinte_dash.txt
+$ awk '$2 ~ /8/' maize_substituted.txt > maize_chr8.txt 
 
-## Create separate files for each chromosome
+$ awk '$2 ~ /9/' maize_substituted.txt > maize_chr9.txt 
 
---> $ for i in {1..10}; do awk '$2=='$i'' maize_sorted_by_chr.txt > maize_chr"$i"_questionmark.txt; done
+$ awk '$2 == /10/' maize_substituted.txt > maize_chr10.txt
 
---> $ for i in {1..10}; do awk '$2=='$i'' teosinte_sorted_by_chr.txt > teosinte_chr"$i"_questionmark.txt; done
+$ awk '$2 ~ /1/' teosinte_substituted.txt > teosinte_chr1.txt 
 
---> $ for i in {1..10}; do awk '$2=='$i'' maize_dash.txt > maize_chr"$i"_dash.txt; done
+$ awk '$2 ~ /2/' teosinte_substituted.txt > teosinte_chr2.txt 
 
---> $ for i in {1..10}; do awk '$2=='$i'' teosinte_dash.txt > teosinte_chr"$i"_dash.txt; done
+$ awk '$2 == /3/' teosinte_substituted.txt > teosinte_chr3.txt
 
-## Sort files with missing data encoded by ? based on increasing SNP position values
+$ awk '$2 ~ /4/' teosinte_substituted.txt > teosinte_chr4.txt 
 
---> $ for i in {1..10}; do sort -k3,3n maize_chr"$i"_questionmark.txt > maize_chr"$i"_questionmark_ordered.txt; done
+$ awk '$2 ~ /5/' teosinte_substituted.txt > teosinte_chr5.txt 
 
---> $ for i in {1..10}; do sort -k3,3n teosinte_chr"$i"_questionmark.txt> teosinte_chr"$i"_questionmark_ordered.txt; done
+$ awk '$2 == /6/' teosinte_substituted.txt > teosinte_chr6.txt
 
-## Sort files with missing data encoded by - based on decreasing SNP position values
+$ awk '$2 ~ /7/' teosinte_substituted.txt > teosinte_chr7.txt 
 
---> for i in {1..10}; do sort -k3,3nr maize_chr"$i"_dash.txt > maize_chr"$i"_dash_ordered.txt; done
+$ awk '$2 ~ /8/' teosinte_substituted.txt > teosinte_chr8.txt 
 
---> $ for i in {1..10}; do sort -k3,3nr teosinte_chr"$i"_dash.txt > teosinte_chr"$i"_dash_ordered.txt; done
+$ awk '$2 == /9/' teosinte_substituted.txt > teosinte_chr9.txt
+
+$ awk '$2 ~ /10/' teosinte_substituted.txt > teosinte_chr10.txt 
+
+$ awk '$2 == /1/' maize_substituted_dash.txt > maize_chr1_dash.txt
+
+$ awk '$2 ~ /2/' maize_substituted_dash.txt > maize_chr2_dash.txt 
+
+$ awk '$2 ~ /3/' maize_substituted_dash.txt > maize_chr3_dash.txt 
+
+$ awk '$2 == /4/' maize_substituted_dash.txt > maize_chr4_dash.txt
+
+$ awk '$2 ~ /5/' maize_substituted_dash.txt > maize_chr5_dash.txt 
+
+$ awk '$2 ~ /6/' maize_substituted_dash.txt > maize_chr6_dash.txt 
+
+$ awk '$2 == /7/' maize_substituted_dash.txt > maize_chr7_dash.txt
+
+$ awk '$2 ~ /8/' maize_substituted_dash.txt > maize_chr8_dash.txt 
+
+$ awk '$2 ~ /9/' maize_substituted_dash.txt > maize_chr9_dash.txt 
+
+$ awk '$2 == /10/' maize_substituted_dash.txt > maize_chr10_dash.txt
+
+$ awk '$2 ~ /1/' teosinte_substituted_dash.txt > teosinte_chr1_dash.txt 
+
+$ awk '$2 ~ /2/' teosinte_substituted_dash.txt > teosinte_chr2_dash.txt 
+
+$ awk '$2 == /3/' teosinte_substituted_dash.txt > teosinte_chr3_dash.txt
+
+$ awk '$2 ~ /4/' teosinte_substituted_dash.txt > teosinte_chr4_dash.txt 
+
+$ awk '$2 ~ /5/' teosinte_substituted_dash.txt > teosinte_chr5_dash.txt 
+
+$ awk '$2 == /6/' teosinte_substituted_dash.txt > teosinte_chr6_dash.txt
+
+$ awk '$2 ~ /7/' teosinte_substituted_dash.txt > teosinte_chr7_dash.txt 
+
+$ awk '$2 ~ /8/' teosinte_substituted_dash.txt > teosinte_chr8_dash.txt 
+
+$ awk '$2 == /9/' teosinte_substituted_dash.txt > teosinte_chr9_dash.txt
+
+$ awk '$2 ~ /10/' teosinte_substituted_dash.txt > teosinte_chr10_dash.txt 
+
+$ sort -k3,3n maize_chr1.txt > maize_snp_chr1.txt 
+
+$ sort -k3,3n teosinte_chr1.txt > teosinte_snp_chr1.txt
+
+$ sort -k3,3nr maize_chr1_dash.txt > maize_snp_chr1_reversed.txt 
+
+$ sort -k3,3nr teosinte_chr1_dash.txt > teosinte_snp_chr1_reversed.txt
+
+$ sort -k3,3n maize_chr2.txt > maize_snp_chr2.txt 
+
+$ sort -k3,3n teosinte_chr2.txt > teosinte_snp_chr2.txt
+
+$ sort -k3,3nr maize_chr2_dash.txt > maize_snp_chr2_reversed.txt 
+
+$ sort -k3,3nr teosinte_chr2_dash.txt > teosinte_snp_chr2_reversed.txt
+
+$ sort -k3,3n maize_chr3.txt > maize_snp_chr3.txt 
+
+$ sort -k3,3n teosinte_chr3.txt > teosinte_snp_chr3.txt
+
+$ sort -k3,3nr maize_chr3_dash.txt > maize_snp_chr3_reversed.txt 
+
+$ sort -k3,3nr teosinte_chr3_dash.txt > teosinte_snp_chr3_reversed.txt
+
+$ sort -k3,3n maize_chr4.txt > maize_snp_chr4.txt 
+
+$ sort -k3,3n teosinte_chr4.txt > teosinte_snp_chr4.txt
+
+$ sort -k3,3nr maize_chr4_dash.txt > maize_snp_chr4_reversed.txt 
+
+$ sort -k3,3nr teosinte_chr4_dash.txt > teosinte_snp_chr4_reversed.txt
+
+$ sort -k3,3n maize_chr5.txt > maize_snp_chr5.txt 
+
+$ sort -k3,3n teosinte_chr5.txt > teosinte_snp_chr5.txt
+
+$ sort -k3,3nr maize_chr5_dash.txt > maize_snp_chr5_reversed.txt 
+
+$ sort -k3,3nr teosinte_chr5_dash.txt > teosinte_snp_chr5_reversed.txt
+
+$ sort -k3,3n maize_chr6.txt > maize_snp_chr6.txt 
+
+$ sort -k3,3n teosinte_chr6.txt > teosinte_snp_chr6.txt
+
+$ sort -k3,3nr maize_chr6_dash.txt > maize_snp_chr6_reversed.txt 
+
+$ sort -k3,3nr teosinte_chr6_dash.txt > teosinte_snp_chr6_reversed.txt
+
+$ sort -k3,3n maize_chr7.txt > maize_snp_chr7.txt 
+
+$ sort -k3,3n teosinte_chr7.txt > teosinte_snp_chr7.txt
+
+$ sort -k3,3nr maize_chr7_dash.txt > maize_snp_chr7_reversed.txt 
+
+$ sort -k3,3nr teosinte_chr7_dash.txt > teosinte_snp_chr7_reversed.txt
+
+$ sort -k3,3n maize_chr8.txt > maize_snp_chr8.txt 
+
+$ sort -k3,3n teosinte_chr8.txt > teosinte_snp_chr8.txt
+
+$ sort -k3,3nr maize_chr8_dash.txt > maize_snp_chr8_reversed.txt 
+
+$ sort -k3,3nr teosinte_chr8_dash.txt > teosinte_snp_chr8_reversed.txt
+
+$ sort -k3,3n maize_chr9.txt > maize_snp_chr9.txt 
+
+$ sort -k3,3n teosinte_chr9.txt > teosinte_snp_chr9.txt
+
+$ sort -k3,3nr maize_chr9_dash.txt > maize_snp_chr9_reversed.txt 
+
+$ sort -k3,3nr teosinte_chr9_dash.txt > teosinte_snp_chr9_reversed.txt
+
+$ sort -k3,3n maize_chr10.txt > maize_snp_chr10.txt 
+
+$ sort -k3,3n teosinte_chr10.txt > teosinte_snp_chr10.txt
+
+$ sort -k3,3nr maize_chr10_dash.txt > maize_snp_chr10_reversed.txt 
+
+$ sort -k3,3nr teosinte_chr10_dash.txt > teosinte_snp_chr10_reversed.txt
 
 ## Create a file with all SNPs with unknown position in the genome
 
@@ -124,6 +245,5 @@ $ sort -k2,2n teosinte_joined.txt > teosinte_sorted_by_chr.txt
 --> $ git commit -m "Unix Assignment" 
 
 --> $ git push origin master
-
 
 # jmshook
