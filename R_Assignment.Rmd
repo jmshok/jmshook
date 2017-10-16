@@ -144,12 +144,14 @@ snps$Position <- as.numeric(as.character(snps$Position)) #ignore warnings
 snps_2 <- snps[,c(1,3,4)]
 snps_2
 
-fang_t <- as.data.frame(t(fang),row.names=T)
-colnames(fang_t) <- as.character(unlist(fang_t[1,]))
-all_groups <- fang_t[3,]
-colnames(fang_t$Sample_ID) = "SNP_ID"
-combined <- merge(snps_2, fang_t, by= "SNP_ID")
-combined[,-c(1:3)] <- lapply(combined[,-c(1:3)], as.character) 
+genotypes <- read.table("fang_et_al_genotypes.txt", header = T, stringsAsFactors = F)
+fang_t<-as.data.frame(t(genotypes),row.names=T)
+colnames(fang_t)<-as.character(unlist(fang_t[1,]))
+all_groups<-fang_t[3,]
+fang_t<-fang_t[-c(1:3),] #for part 1
+colnames(fang_t)[1]<-paste("SNP_ID")
+snps <- read.delim("snp_position.txt", header = T, stringsAsFactors = F)
+combined <- merge(snps,t(genotypes), by.x="SNP_ID", by.y = "row.names")
 ```
 
 ##Formatting SNPs
