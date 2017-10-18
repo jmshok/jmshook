@@ -56,7 +56,7 @@ maize_cut_increasing_snps <- maize_cut[order(as.numeric(as.character(maize_cut$P
 ```{r}
 for (i in 1:10) {
  maize_loop <- maize_cut_increasing_snps[maize_cut_increasing_snps$Chromosome == i,]
- write.csv(maize_loop, sprintf("maize_chromosome_%d_increasing_snps", i), row.names = F)
+ write.csv(maize_loop, sprintf("maize_chromosome_%d_increasing_snps.txt", i), row.names = F)
 }
 ```
 
@@ -76,7 +76,7 @@ maize_dashes[maize_dashes == "?/?"] <- "-/-"
 ```{r}
 for (i in 1:10) {
  maize_loop <- maize_dashes[maize_dashes$Chromosome == i,]
- write.csv(maize_loop, sprintf("maize_chromosome_%d_decreasing_snps", i), row.names = F)
+ write.csv(maize_loop, sprintf("maize_chromosome_%d_decreasing_snps.txt", i), row.names = F)
 }
 ```
 
@@ -110,7 +110,7 @@ teosinte_cut_increasing_snps <- teosinte_cut[order(as.numeric(as.character(teosi
 ```{r}
 for (i in 1:10) {
  teosinte_loop <- teosinte_cut_increasing_snps[teosinte_cut_increasing_snps$Chromosome == i,]
- write.csv(teosinte_loop, sprintf("teosinte_chromosome_%d_increasing_snps", i), row.names = F)}
+ write.csv(teosinte_loop, sprintf("teosinte_chromosome_%d_increasing_snps.txt", i), row.names = F)}
 ```
 
 ##Sort by SNP decreasing
@@ -128,7 +128,7 @@ teosinte_dashes[teosinte_dashes == "?/?"] <- "-/-"
 ```{r}
 for (i in 1:10) {
  teosinte_loop <- teosinte_dashes[teosinte_dashes$Chromosome == i,]
- write.csv(teosinte_loop, sprintf("teosinte_chromosome_%d_decreasing_snps", i), row.names = F)}
+ write.csv(teosinte_loop, sprintf("teosinte_chromosome_%d_decreasing_snps.txt", i), row.names = F)}
 ```
 
 Part II - graphs
