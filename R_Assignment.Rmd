@@ -164,7 +164,7 @@ all_groups <- cbind(0,0,0,all_groups)
 write.csv(all_groups,"all_groups.csv", header=T)
 write.csv(combined,"combined.csv", header=T)
 #Had to manually merge column names using Excel- paste column names from all_groups starting with column 15 in combined
-all_groups <- read.csv("combined.csv, header=T
+all_groups <- read.csv("combined.csv", header=T)
 combined <- rbind(all_groups, combined) #making group info a row, for a later loop
 row.names(combined) <- seq(1,nrow(combined),1)
 groups <- as.character(unique(fang$Group))
