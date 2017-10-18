@@ -1,0 +1,62 @@
+---
+title: "McNinch_Review_For_Shook"
+author: "Colton McNinch"
+date: "10/17/2017"
+output: pdf_document
+---
+
+I will attempt to highlight any segments of code I felt needed brushed up on below. Overall, I would rate this code as good and realatively straightforward. There was not a `Data Inspection` portion yet and can hopefully be added. The `Data Processing` section was 
+quite good. The `Part II` or graphing portions were fine, however I ran into some
+problems where the `cbind` function didn't work because the two vectors being bound
+were not of the same length. This effectively hindered me from continuing. Hopefully 
+that section can be made more robust. 
+
+
+In this code section, the resulting data frame is correct. However, if 
+one were to want to know which columns went with which individuals (i.e. Sample_ID) it might 
+be beneficial to capture those sample names as a character vector (simply the first row
+of the `transposed_maize` data frame) and then assign those to the appropriate 
+column names of the merged_maize data frame 
+```{r}
+##Join SNP data to genotypes data
+merged_maize <- merge(snps, transposed_maize, by.x = "SNP_ID", by.y = "row.names")
+```
+
+
+In this code section, you need to add `.txt` to the end of 
+`"maize_chromosome_%d_decreasing_snps"` so that the resulting files can be accessed. 
+``` {r}
+##Make files for each chromosome
+
+for (i in 1:10) {
+  maize_loop <- maize_dashes[maize_dashes$Chromosome == i,]
+  write.csv(maize_loop, sprintf("maize_chromosome_%d_decreasing_snps", i), row.names = F)
+}
+```
+
+
+
+In this code section, I was unable to run `colnames(all_groups) <- colnames(combined)`
+because `all_groups` and `combined` did not have the same number of rows this unfortunately 
+inhibited me from running all subsequent portions of code. 
+```{r}
+##Formatting SNPs
+
+snps_2 <- snps[,c(1,3,4)]
+combined <- combined[order(combined[,2], combined[,3]),]
+row.names(combined) <- seq(1,nrow(combined),1)
+all_groups <- all_groups[-1]#formatting for future rbind
+all_groups <- cbind(0,0,0,all_groups)
+colnames(all_groups) <- colnames(combined)
+combined <- rbind(all_groups, combined) #making group info a row, for a later loop
+row.names(combined) <- seq(1,nrow(combined),1)
+groups <- as.character(unique(fang$Group))
+
+```
+
+
+
+
+
+
+
