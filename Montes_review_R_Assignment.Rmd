@@ -1,0 +1,308 @@
+---
+title: "R Assignment 546x"
+author: "Johnathon Shook"
+date: "October 12, 2017"
+output: html_notebook
+---
+
+**Review note:** You did not provide the files on your git repository. I had to copy them into the project folder to test your code.
+**Review note:** You should avoid setting working directory (specially using full paths). Setting it makes the code unable to work on another machine.
+**Review note:** Nice work, your code looks very well commented and clean. However, I was not able to run all the chunks (some of them are giving error code). 
+
+## Set working directory for entire code
+```{r}
+setwd("/Users/jmshook/Desktop/Class/EEOB546/BCB546X-Fall2017/R_Assignment")
+```
+
+
+Part I
+
+Data Reading
+
+## fang_et_al_genotypes.txt
+```{r}
+genotypes <- read.table("fang_et_al_genotypes.txt", header = T, stringsAsFactors = F)
+```
+
+## snp_position.txt
+```{r}
+snps <- read.delim("snp_position.txt", header = T, stringsAsFactors = F)
+```
+
+
+Data Processing
+
+## Maize
+```{r}
+#extract only maize results
+maize <- genotypes[genotypes$Group == "ZMMIL" | genotypes$Group == "ZMMLR" | genotypes$Group == "ZMMMR",]
+```
+
+## Transpose resulting data frame
+```{r}
+transposed_maize <- t(maize)
+```
+
+## Join SNP data to genotypes data
+```{r}
+merged_maize <- merge(snps, transposed_maize, by.x = "SNP_ID", by.y = "row.names")
+```
+
+## Cut out only columns needed
+```{r}
+maize_cut <- merged_maize[,-c(2,5:15)]
+```
+
+## Sort by SNP increasing
+```{r}
+maize_cut_increasing_snps <- maize_cut[order(as.numeric(as.character(maize_cut$Position))),]
+
+```
+
+## Make files for each chromosome
+```{r}
+for (i in 1:10) {
+ maize_loop <- maize_cut_increasing_snps[maize_cut_increasing_snps$Chromosome == i,]
+ write.csv(maize_loop, sprintf("maize_chromosome_%d_increasing_snps", i), row.names = F)
+}
+```
+
+## Sort by SNP decreasing
+```{r}
+maize_cut_decreasing_snps <- maize_cut[order(-as.numeric(as.character(maize_cut$Position))),]
+```
+
+## Substitute ? for -
+```{r}
+#Note: Relevant columns must be coded as as.character or it won't work
+maize_dashes <- maize_cut_decreasing_snps
+maize_dashes[maize_dashes == "?/?"] <- "-/-"
+```
+
+## Make files for each chromosome
+```{r}
+for (i in 1:10) {
+ maize_loop <- maize_dashes[maize_dashes$Chromosome == i,]
+ write.csv(maize_loop, sprintf("maize_chromosome_%d_decreasing_snps", i), row.names = F)
+}
+```
+
+##Teosinte
+```{r}
+#extract only teosinte results, everything else same in this section as in maize
+teosinte <- genotypes[genotypes$Group == "ZMMIL" | genotypes$Group == "ZMMLR" | genotypes$Group == "ZMMMR",]
+```
+
+##Transpose resulting data frame
+```{r}
+transposed_teosinte <- t(teosinte)
+```
+
+##Join SNP data to genotypes data
+```{r}
+merged_teosinte <- merge(snps, transposed_teosinte, by.x = "SNP_ID", by.y = "row.names")
+```
+
+##Cut out only columns needed
+```{r}
+teosinte_cut <- merged_teosinte[,-c(2,5:15)]
+```
+
+##Sort by SNP increasing
+```{r}
+teosinte_cut_increasing_snps <- teosinte_cut[order(as.numeric(as.character(teosinte_cut$Position))),]
+```
+
+## Make files for each chromosome
+```{r}
+for (i in 1:10) {
+ teosinte_loop <- teosinte_cut_increasing_snps[teosinte_cut_increasing_snps$Chromosome == i,]
+ write.csv(teosinte_loop, sprintf("teosinte_chromosome_%d_increasing_snps", i), row.names = F)}
+```
+
+## Sort by SNP decreasing
+```{r}
+teosinte_cut_decreasing_snps <- teosinte_cut[order(-as.numeric(as.character(teosinte_cut$Position))),]
+```
+
+## Substitute ? for -
+```{r}
+teosinte_dashes <- teosinte_cut_decreasing_snps
+teosinte_dashes[teosinte_dashes == "?/?"] <- "-/-"
+```
+
+## Make files for each chromosome
+```{r}
+for (i in 1:10) {
+ teosinte_loop <- teosinte_dashes[teosinte_dashes$Chromosome == i,]
+ write.csv(teosinte_loop, sprintf("teosinte_chromosome_%d_decreasing_snps", i), row.names = F)}
+```
+
+Part II - graphs
+## Starting anew with input files
+```{r}
+library("ggplot2")
+fang <- read.table("fang_et_al_genotypes.txt",header=T)
+fang[] <- lapply(fang, as.character) #making every characters, needed for next step
+fang <- rbind(colnames(fang),fang) #making first row column names
+snps <- read.delim("snp_position.txt")
+snps$Chromosome <- as.numeric(as.character(snps$Chromosome)) #ignore warnings
+snps$Position <- as.numeric(as.character(snps$Position)) #ignore warnings
+snps_2 <- snps[,c(1,3,4)]
+snps_2
+
+genotypes <- read.table("fang_et_al_genotypes.txt", header = T, stringsAsFactors = F)
+fang_t<-as.data.frame(t(genotypes),row.names=T)
+colnames(fang_t)<-as.character(unlist(fang_t[1,]))
+all_groups<-fang_t[3,]
+fang_t<-fang_t[-c(1:3),] #for part 1
+colnames(fang_t)[1]<-paste("SNP_ID")
+snps <- read.delim("snp_position.txt", header = T, stringsAsFactors = F)
+combined <- merge(snps,t(genotypes), by.x="SNP_ID", by.y = "row.names")
+```
+
+## Formatting SNPs
+```{r}
+snps_2 <- snps[,c(1,3,4)]
+combined <- combined[order(combined[,2], combined[,3]),]
+row.names(combined) <- seq(1,nrow(combined),1)
+all_groups <- all_groups[-1]#formatting for future rbind
+all_groups <- cbind(0,0,0,all_groups)
+colnames(all_groups) <- colnames(combined)
+combined <- rbind(all_groups, combined) #making group info a row, for a later loop
+row.names(combined) <- seq(1,nrow(combined),1)
+groups <- as.character(unique(fang$Group))
+```
+
+## Looping through and getting the number SNPs per chromosome
+```{r}
+snps_per_chrom <- data.frame()
+for(i in 1:10){
+ temp <- nrow(combined[combined$Chromosome==i,])
+ snps_per_chrom <- rbind(snps_per_chrom,cbind(i,temp))
+ }
+colnames(snps_per_chrom) <- c("Chromosome", "num_SNPs")
+```
+
+## Looping through and getting number of SNPs per Group
+```{r}
+by_group <- data.frame()
+for(j in 1:length(groups)){
+ temp <- ncol(combined[,combined[1,]==groups[j]])
+ temp <- cbind(groups[j],temp)
+ by_group <- rbind(by_group,temp)}
+colnames(by_group) <- c("group", "Num_Genotypes")
+by_group[,2] <- as.numeric(as.character(by_group[,2]))
+```
+
+##Plotting number of SNPs per chromosome
+```{r}
+ggplot(snps_per_chrom, aes(x=snps_per_chrom$Chromosome,y=snps_per_chrom$num_SNPs))+geom_bar(stat="identity")+
+ labs(list(x="Chromosome",y="# of SNPs", title="SNPs per Chromosome")) + 
+ scale_x_discrete(limits=seq(1,10,1))
+```
+
+##Plotting number of Genotypes per Group
+```{r}
+ggplot(by_group, aes(x=by_group$group, y=by_group$Num_Genotypes)) + geom_bar(stat="identity") + labs(list(x="Group", y="# of Genotypes", title="Number of Genotypes per Group")) + theme(axis.text.x=element_text(angle=90))
+```
+
+##Missing data and amount of heterzygosity
+```{r}
+fang <- read.table("fang_et_al_genotypes.txt",header=T)
+fang[1:10, 1:10]
+fang[] <- lapply(fang, as.character) #making data into characters, needed for next steps
+fang <- fang[,-2]
+fang[,-c(1:2)][fang[,-c(1:2)]=="?/?"] <- NA
+fang <- fang[order(fang[,1], fang[,2]),]
+fang2 <- fang
+```
+
+## Making homozygotes equal to 1, heterozygotes equal to 0
+```{r}
+for(i in 1:nrow(fang2)){
+ for(j in 3:ncol(fang2)){
+  if(is.na(fang2[i,j])==FALSE){
+   if(strsplit(fang2[i,j], "\\/")[[1]][1]==strsplit(fang2[i,j], "\\/")[[1]][2]){
+    fang2[i,j] <- 1
+   }else if(strsplit(fang2[i,j], "\\/")[[1]][1]!=strsplit(fang2[i,j], "\\/")[[1]][2])
+    fang2[i,j] <- 0}}}
+fang2[,-c(1:2)] <- lapply(fang2[,-c(1:2)],as.numeric)
+```
+
+## Percentage of homozygotes, heterozygotes, and missing
+```{r}
+num_col <- ncol(fang2[,-c(1:2)])
+call_percents <- function(x){
+ SNP <- unlist(x)
+ percent_homozygotes <- sum(SNP, na.rm=T) / num_col
+ percent_missing <- sum(is.na(SNP))/num_col
+ percent_heterzygotes <- 1-percent_homozygotes-percent_missing
+ out <- cbind(percent_homozygotes, percent_heterzygotes,percent_missing)}
+fang_percentages <- as.data.frame(apply(fang2[,-c(1:2)],1,call_percents)) #applying function
+dim(fang_percentages)
+fang_percentages <- t(fang_percentages)
+head(fang_percentages)
+colnames(fang_percentages) <- c("percent_homozygotes", "percent_heterzygotes", "percent_missing")
+fang_percentages <- cbind(fang2[,c(1:2)], fang_percentages)
+```
+
+## Reshape and Plot species specific SNP calls
+```{r}
+library("reshape2")
+fang_percentages2 <- melt(fang_percentages, id=c("Sample_ID", "Group"))
+
+ggplot(fang_percentages2, aes(x=fang_percentages2$Sample_ID, y=fang_percentages2$value, fill=fang_percentages2$variable)) + 
+ geom_bar(stat="identity") +
+ labs(list(x="Genotype",y="Percent of SNP calls", title="Percentage of SNPs calls, grouped by Genotype")) + 
+ theme(axis.text.x=element_blank(), plot.title=element_text(hjust=.5)) + guides(fill=guide_legend((title="Legend"))) 
+```
+
+##Getting the percentage of heterozygotes, homozygotes and missing per group
+```{r}
+groups <- unique(fang_percentages$Group)
+group_summary <- data.frame()
+for(i in 1:length(groups)){
+ temp <- fang_percentages[fang_percentages$Group==groups[i],]
+ group_summary <- rbind(group_summary, cbind(groups[i], mean(temp[,3]), mean(temp[,4]), mean(temp[,5])))}
+colnames(group_summary) <- c("group", "homozygotes", "heterozygotes", "missing")
+group_summary[,2] <- as.numeric(as.character(group_summary[,2]))
+group_summary[,3] <- as.numeric(as.character(group_summary[,3]))
+group_summary[,4] <- as.numeric(as.character(group_summary[,4]))
+group_summary <- melt(group_summary, id="group")
+```
+
+##Plotting the breakdown of SNP calls by Group
+```{r}
+ggplot(group_summary, aes(x=group_summary$group, y=group_summary$value, fill=group_summary$variable)) + geom_bar(stat ="identity", position="dodge") +
+ labs(list(x="Group",y="Percent of SNP calls", title="Percentage of SNPs calls by Group")) + 
+ theme(plot.title=element_text(hjust=.5), axis.text.x=element_text(angle=45)) + guides(fill=guide_legend((title="Legend")))
+```
+
+##Getting the number of non-NA SNPs for each group within each chromosome
+```{r}
+group_within_chr <- data.frame()
+for(i in 1:10){
+ tempdf <- combined[combined$Chromosome==i,]
+ tempdf <- rbind(combined[1,],tempdf)
+ temp_none_NA_snps <- ((nrow(tempdf)-1) * (ncol(tempdf)-3)) - sum(sapply(tempdf[-1,-c(1:3)], function(x) sum(is.na(x)))) 
+ #total number non-NA SNPs in i-th chromosome
+ for(j in 1:length(groups)){
+  temp_group_df <- tempdf[,tempdf[1,]==groups[j]]
+  group_within_chr <- rbind(group_within_chr, cbind(i,groups[j],((((nrow(temp_group_df)-1) * (ncol(temp_group_df))) - sum(sapply(temp_group_df, function(x) sum(is.na(x))))) / temp_none_NA_snps)))}}
+colnames(group_within_chr) <- c("chr", "group", "percent_SNPs")
+group_within_chr[,3] <- as.numeric(as.character(group_within_chr[,3]))
+group_within_chr[,1] <- as.numeric(as.character(group_within_chr[,1]))
+group_within_chr[,2] <- as.character(levels(group_within_chr[,2]))[group_within_chr[,2]]
+```
+
+##Number of non-NA SNPs per group, stacked barchart
+```{r}
+ggplot(group_within_chr, aes(x=group_within_chr$chr, y=group_within_chr$percent_SNPs, fill=group_within_chr$group)) + geom_bar(stat="identity") + labs(list(x="Chromosome",y="Non-Missing SNPs per Group", title="Percent Non-Missing SNPs by Group")) + scale_x_discrete(limits=seq(1,10,1)) + guides(fill=guide_legend((title="Legend")))
+```
+
+##Number of non-NA SNPs per group, line graph
+```{r}
+ggplot(group_within_chr, aes(x=group_within_chr$chr, y=group_within_chr$percent_SNPs)) + geom_line(aes(color=group_within_chr$group)) +
+ labs(list(x="Chromosome",y="Non-Missing SNPs per Group", title="Percent Non-Missing SNPs by Group")) + scale_x_discrete(limits=seq(1,10,1)) + guides(fill=guide_legend((title="Legend")))
+```
